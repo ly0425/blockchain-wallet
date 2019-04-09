@@ -1,6 +1,8 @@
 <template>
     <div class="hello">
-        {{tether}}
+        <div style="padding: 20px">
+            <canvas id="chart" width="2000" height="1000"></canvas>
+        </div>
         <div class="search">
             <div>
                 <Select v-model="base" style="width:200px">
@@ -18,7 +20,7 @@
 
 <script>
     import axios from 'axios';
-
+    import moment from 'moment';
     export default {
         name: 'HelloWorld',
         props: {
@@ -58,6 +60,9 @@
                 base: 'eth',
                 period: 5,
                 timer: null,
+                chart: 'chart',
+                context: {},
+                lineColor: 'red',
             }
         },
         methods: {
@@ -77,32 +82,51 @@
                         console.log(error);
                     });
             },
-            init(){
+            init() {
                 //clearInterval(this.timer)
                 const vue = this;
-                setInterval(function(){vue.getTicker(vue.base)}, vue.period * 1000);
+                setInterval(function () {
+                    vue.getTicker(vue.base)
+                }, vue.period * 1000);
+            },
+            initDraw() {
+                // 初始化画布
+                const canvas = document.getElementById("chart");
+                this.context = canvas.getContext('2d')
+                //this.draw(this.context, 0, 0, 50, 50, "#FF0000");
+
+            },
+            draw(context, x1, y1, x2, y2, color) {
+                context.fillStyle = color;
+                context.fillRect(x1, y1, x2, y2);
             }
         },
-        watch:{
-            base(){
+        watch: {
+            base() {
                 this.init();
             },
-            period(){
+            period() {
                 this.init();
+            },
+            tether(val){
+                for (var i = 0; i < 100; i++) {
+                    this.draw(this.context, i * 10, val[i].high * 10000 - 40, 10, 10, "#FF0000")
+                }
             }
         },
-        created() {
-            //const vue = this;
-            // axios.get('https://api.coincap.io/v2/candles?exchange=poloniex&interval=h8&baseId=ethereum&quoteId=bitcoin')
-            //         .then(function (response) {
-            //           console.log(response);
-            //           vue.tether = response.data.data;
-            //         })
-            //         .catch(function (error) {
-            //           console.log(error);
-            //         });
-            this.getTicker();
-            this.init();
+        mounted() {
+            const vue = this;
+            axios.get('https://api.coincap.io/v2/candles?exchange=poloniex&interval=h8&baseId=ethereum&quoteId=bitcoin')
+                    .then(function (response) {
+                      console.log(response);
+                      vue.tether = response.data.data;
+                    })
+                    .catch(function (error) {
+                      console.log(error);
+                    });
+            //this.getTicker();
+            //this.init();
+            this.initDraw();
         },
     }
 </script>
@@ -126,15 +150,21 @@
     a {
         color: #42b983;
     }
-    .search{
+
+    .search {
 
     }
-    .search .period{
+
+    .search .period {
         width: 100px;
         margin-left: 20px;
     }
+
     .list {
         padding: 10px 200px;
         margin-top: 20px;
+    }
+    #chart{
+        width:1000px;height:500px;
     }
 </style>
